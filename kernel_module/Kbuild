@@ -1,0 +1,4 @@
+TARGET = processor_container
+obj-m := processor_container.o
+processor_container-objs := src/core.o src/ioctl.o interface.o
+ccflags-y := -I$(src)/include 
