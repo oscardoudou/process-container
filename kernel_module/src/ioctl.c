@@ -44,6 +44,57 @@
 #include <linux/mutex.h>
 #include <linux/sched.h>
 #include <linux/kthread.h>
+typedef struct container_node container_node;
+typedef struct thread_node thread_node;
+
+struct thread_node{
+	int tid;
+	thread_node* next;
+};
+
+struct container_node{
+	int cid;
+	container_node* next;
+	thread_node* current_thread;
+};
+//can't malloc in file-level scope
+//current is kernel global variable, so name current can't use as variable name
+//container_node* curr = NULL;
+container_node* head = NULL;
+container_node* tail = NULL;
+
+int create_container(int cid){
+	container_node* new_node = (container_node*)kmalloc(sizeof(container_node),GFP_KERNEL);
+	//new_node->next = NULL;
+	new_node->cid = cid;
+	new_node->current_thread = NULL;
+	if(head == NULL){
+		head = new_node;
+		head->next = head;
+		tail = head;
+	}else{
+		tail->next = new_node;
+		new_node->next = head;
+		printk("after container %d ",tail->cid);
+		tail = new_node;
+		printk("add container %d\n",tail->cid);
+	}		
+	/**
+	*original singly list
+	if(curr == NULL){
+		curr = new_node;
+	}
+	else{
+		container_node* temp = curr;
+		while(temp->next != NULL){
+			temp = temp->next;
+		}
+		temp->next = new_node;
+		printk("add new container %d after %d\n", new_node->cid, temp->cid);
+	}
+	**/
+	return 0;
+}
 
 /**
  * Delete the task in the container.
@@ -53,6 +104,7 @@
  */
 int processor_container_delete(struct processor_container_cmd __user *user_cmd)
 {
+	printk("Deleting a container\n");
     return 0;
 }
 
@@ -66,6 +118,9 @@ int processor_container_delete(struct processor_container_cmd __user *user_cmd)
  */
 int processor_container_create(struct processor_container_cmd __user *user_cmd)
 {
+	printk("Creating a container");
+	printk("whose cid is  %llu\n",user_cmd->cid);
+	create_container((int)user_cmd->cid);
     return 0;
 }
 
@@ -77,6 +132,7 @@ int processor_container_create(struct processor_container_cmd __user *user_cmd)
  */
 int processor_container_switch(struct processor_container_cmd __user *user_cmd)
 {
+	printk("Switching between container\n");
     return 0;
 }
 
