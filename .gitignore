@@ -1,6 +1,7 @@
-.
-.order
+.*
+*.order
 *.o
+*.o.*
 *.ko
 *.so
 *.mod.c
@@ -9,3 +10,4 @@ benchmark
 80-process_container.rules
 Module.symvers
 cscope.*
+!.gitignore
