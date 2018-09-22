@@ -4,4 +4,8 @@
 *.ko
 *.so
 *.mod.c
+libpcontainer.so.1.0
+benchmark
+80-process_container.rules
 Module.symvers
+cscope.*
