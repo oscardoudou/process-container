@@ -55,45 +55,229 @@ struct thread_node{
 struct container_node{
 	int cid;
 	container_node* next;
-	thread_node* current_thread;
+	thread_node* head_thread;
+	thread_node* tail_thread;
+	int num_of_thread;
 };
-//can't malloc in file-level scope
+//can't kmalloc in file-level scope
 //current is kernel global variable, so name current can't use as variable name
 //container_node* curr = NULL;
 container_node* head = NULL;
 container_node* tail = NULL;
 
 int create_container(int cid){
-	container_node* new_node = (container_node*)kmalloc(sizeof(container_node),GFP_KERNEL);
-	//new_node->next = NULL;
+	container_node* new_node = (container_node*)kmalloc(sizeof(container_node), GFP_KERNEL);//);
+	
 	new_node->cid = cid;
-	new_node->current_thread = NULL;
-	if(head == NULL){
+	new_node->head_thread = NULL;
+	new_node->tail_thread = NULL;
+	new_node->num_of_thread = 0;
+	if (head == NULL)
+	{
 		head = new_node;
 		head->next = head;
 		tail = head;
-	}else{
+		printk("add first container %d\n",head->cid);
+	}
+	else
+	{
 		tail->next = new_node;
 		new_node->next = head;
 		printk("after container %d ",tail->cid);
 		tail = new_node;
 		printk("add container %d\n",tail->cid);
-	}		
-	/**
-	*original singly list
+	} 
+	// printk("bug after this 12 ");
+	return 0;
+}
+
+int delete_container(int cid){
+    container_node* curr = head;
+    container_node* prev = tail;
+    //if list is empty
+    if(head == NULL)
+        return 0;
+    //if list not empty but only one node
+    if(head->cid == cid && tail->cid == cid){
+        head = NULL;
+        tail = NULL;
+        return 0;
+    }
+    //if more than one 
+    while(curr->cid != cid){
+        prev = curr;
+        curr = curr->next;
+    }
+    //tackle when deleting head
+    if(curr == head)
+    	head = curr->next;
+    //tackle when deleting tail
+    if(curr->next == head)
+    	tail = prev;
+    prev->next = curr->next;
+    printk("delete a container %d\n", curr->cid);
+    return 0;
+}
+
+container_node* find_container(int cid){
+	container_node* curr = head;
+	// //list has only one node 
+	// if(curr == head && curr->cid == cid){
+	// 	// printk("find container %d", curr->cid);
+	// 	return curr;
+	// }
 	if(curr == NULL){
-		curr = new_node;
+		printk("container %d doestn't exist, because there isn't even a container list\n",cid);
+		return NULL;
+	}
+	while(curr != tail){
+		// printk("-0-\n");
+		if(curr->cid == cid){
+			// printk("find at container %d \n", curr->cid );
+			// printk("find container %d", curr->cid);
+			// printk("-1-\n");
+			printk("find container %d\n", curr->cid);
+			return curr;
+		}
+		curr = curr->next;		
+	}
+	// printk("-2-\n");
+	if(curr->cid == cid){
+		// printk("find at container %d ", curr->cid );
+		// printk("-3-\n");
+		printk("find container %d\n", curr->cid);
+		return curr;
+	}
+	printk("container %d doesn't exist\n",cid );
+	return NULL;
+}
+
+int bind_thread(container_node* container, int tid){
+	thread_node* new_thread = (thread_node*)kmalloc(sizeof(thread_node),GFP_KERNEL);
+	new_thread->tid = tid;
+	//printk("kmalloc for new thread_node success\n");
+	// thread_node* head = container->head_thread;
+	// thread_node* tail = container->tail_thread;
+	//container haven't bind any thread
+	if(container->head_thread == NULL){
+		//printk("container %d 's head_thread is NULL\n",container->cid);
+		// head = new_thread;
+		// head->next = head;
+		// tail = head;
+		container->head_thread = new_thread;
+		container->head_thread->next = container->head_thread;
+		container->tail_thread = container->head_thread;
+		printk("bind first thread(task) %d to container %d\n",tid,container->cid);
 	}
 	else{
-		container_node* temp = curr;
-		while(temp->next != NULL){
-			temp = temp->next;
-		}
-		temp->next = new_node;
-		printk("add new container %d after %d\n", new_node->cid, temp->cid);
+		//printk("container %d already has a task \n",container->cid);
+		// tail->next = new_thread;
+		// new_thread->next = head;
+		// printk("after thread %d ",tail->tid);
+		// tail = new_thread;
+		// printk("add thread %d\n",new_thread->tid);
+		container->tail_thread->next = new_thread;
+		new_thread->next = container->head_thread;
+		printk("after thread %d ", container->tail_thread->tid );
+		container->tail_thread = new_thread;
+		printk("add thread %d\n ", new_thread->tid );
 	}
-	**/
+	container->num_of_thread++;
+	// printk("bug after this 2 ");
 	return 0;
+}
+
+int unbind_thread(container_node* container, int tid){
+	// thread_node* head = container->head_thread;
+	// thread_node* tail = container->tail_thread;
+	// thread_node* curr = head;
+	// thread_node* prev = tail;
+	// if(head == NULL)
+	// 	//potential bug
+	// 	return 0;
+	// if(head->tid == tid && tail->tid == tid){
+	// 	head = NULL;
+	// 	tail = NULL;
+	// 	return 0;
+	// }
+	// while(curr->tid != tid ){
+	// 	prev = curr;
+	// 	curr = curr->next;
+	// }
+	// if(curr == head)
+	// 	head = curr->next;
+	// if(curr->next == head)
+	// 	tail = prev;
+	// prev->next = curr->next;
+	// return 0;
+	thread_node* curr = container->head_thread;
+	thread_node* prev = container->tail_thread;
+	if(container->head_thread == NULL)
+		return 0;
+	if(container->head_thread->tid == tid && container->tail_thread->tid == tid){
+		container->head_thread = NULL;
+		container->tail_thread = NULL;
+		printk("unbind last thread(task) %d in container %d\n",tid,container->cid);
+		container->num_of_thread--;
+		return 0;
+	}
+	while(curr->tid != tid){
+		prev = curr;
+		curr = curr->next;	
+	}
+	if(curr == container->head_thread)
+		container->head_thread = curr->next; 
+	if(curr->next == container->head_thread)
+		container->tail_thread = prev;
+	prev->next = curr->next;
+	container->num_of_thread--;
+	printk("delete thread %d in container %d\n", curr->tid,container->cid);
+	return 0;
+}
+
+int print_thread_list(container_node* container){
+	thread_node* head = container->head_thread;
+	thread_node* curr = head;
+	// thread_node* tail = container->tail_thread;
+	if(curr == NULL){
+		// printk("thread list of c%d is empty",container->cid);
+		printk("empty");
+		return 0;
+	}
+	printk("%d->", curr->tid);
+	curr = curr->next;
+	while(curr != head){
+		printk("%d->", curr->tid);
+		curr = curr->next;
+	}
+	printk("%d", curr->tid);
+	return 0;
+}
+
+int print_container_list(void){
+    container_node* curr = head;
+    /**
+     *	print list in a circular way: start from head end at head
+     *  also check empty case
+    **/
+    if(curr == NULL){
+    	printk("list is empty\n");
+    	return 0;
+    }
+    printk("%d(", curr->cid);
+    print_thread_list(find_container(curr->cid));
+    printk(")->");
+    curr = curr->next;
+    while(curr != head){
+    	printk("%d(",curr->cid);
+    	print_thread_list(find_container(curr->cid));
+    	printk(")->");
+        curr = curr->next;
+    }
+    printk("%d(",curr->cid);
+    print_thread_list(find_container(curr->cid));
+    printk(")\n");
+    return 0;
 }
 
 /**
@@ -104,7 +288,17 @@ int create_container(int cid){
  */
 int processor_container_delete(struct processor_container_cmd __user *user_cmd)
 {
-	printk("Deleting a container\n");
+	struct processor_container_cmd cmd;
+	struct task_struct* task = current;
+	int tid = task->pid;
+	copy_from_user(&cmd, user_cmd, sizeof(cmd));
+	container_node* delete_node = find_container(cmd.cid);
+	printk("Deleting a container ");
+	printk("%llu\n",cmd.cid);
+	//currently assume we only create one task for each container
+	unbind_thread(delete_node,tid);
+	if(delete_node->num_of_thread == 0)
+		delete_container(cmd.cid);
     return 0;
 }
 
@@ -117,10 +311,27 @@ int processor_container_delete(struct processor_container_cmd __user *user_cmd)
  * struct task_struct* current  
  */
 int processor_container_create(struct processor_container_cmd __user *user_cmd)
-{
-	printk("Creating a container");
-	printk("whose cid is  %llu\n",user_cmd->cid);
-	create_container((int)user_cmd->cid);
+{	struct processor_container_cmd cmd;
+	struct task_struct* task = current;
+	int tid = task->pid;
+	
+	// printk("whose cid is  %llu\n",user_cmd->cid);
+	// int cid = (int)user_cmd->cid;
+	//cause every time a threadbody create would call this function
+	//we dont know whether this thread is first in the containre of not
+	printk("Creating a container ");
+	copy_from_user(&cmd, user_cmd, sizeof(cmd));
+	printk("%llu\n",cmd.cid);
+	if(find_container(cmd.cid) == NULL){
+		create_container(cmd.cid);
+		//printk("this line should be seen cause it's before calling find_container");
+		container_node* new_node = find_container(cmd.cid);
+		bind_thread(new_node,tid);
+	}
+	else{
+		container_node* exist_node = find_container(cmd.cid);
+		bind_thread(exist_node,tid);
+	}
     return 0;
 }
 
