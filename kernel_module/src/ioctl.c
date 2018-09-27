@@ -44,6 +44,9 @@
 #include <linux/mutex.h>
 #include <linux/sched.h>
 #include <linux/kthread.h>
+
+static DEFINE_MUTEX(access);
+
 typedef struct container_node container_node;
 typedef struct thread_node thread_node;
 
@@ -59,6 +62,7 @@ struct container_node{
 	thread_node* tail_thread;
 	int num_of_thread;
 };
+
 //can't kmalloc in file-level scope
 //current is kernel global variable, so name current can't use as variable name
 //container_node* curr = NULL;
@@ -292,19 +296,26 @@ int processor_container_delete(struct processor_container_cmd __user *user_cmd)
 	struct task_struct* task = current;
 	int tid = task->pid;
 	copy_from_user(&cmd, user_cmd, sizeof(cmd));
+	printk("entering lock\n");
+	mutex_lock(&access);
 	container_node* delete_node = find_container(cmd.cid);
+	//mutex_unlock(&access);
+	printk("inside lock\n");
 	printk("Deleting a container ");
 	printk("%llu\n",cmd.cid);
 	//currently assume we only create one task for each container
+	//mutex_lock(&access);
 	unbind_thread(delete_node,tid);
 	if(delete_node->num_of_thread == 0)
 		delete_container(cmd.cid);
+	mutex_unlock(&access);
+	printk("just exit lock\n");
     return 0;
 }
 
 /**
  * Create a task in the corresponding container.
- * external functions needed:
+ * external functions needed
  * copy_from_user(), mutex_lock(), mutex_unlock(), set_current_state(), schedule()
  * 
  * external variables needed:
@@ -322,6 +333,9 @@ int processor_container_create(struct processor_container_cmd __user *user_cmd)
 	printk("Creating a container ");
 	copy_from_user(&cmd, user_cmd, sizeof(cmd));
 	printk("%llu\n",cmd.cid);
+	printk("entering lock\n");
+	mutex_lock(&access);
+	printk("inside lock\n");
 	if(find_container(cmd.cid) == NULL){
 		create_container(cmd.cid);
 		//printk("this line should be seen cause it's before calling find_container");
@@ -332,6 +346,8 @@ int processor_container_create(struct processor_container_cmd __user *user_cmd)
 		container_node* exist_node = find_container(cmd.cid);
 		bind_thread(exist_node,tid);
 	}
+	mutex_unlock(&access);
+	printk("just exit lock\n");
     return 0;
 }
 
@@ -342,7 +358,7 @@ int processor_container_create(struct processor_container_cmd __user *user_cmd)
  * mutex_lock(), mutex_unlock(), wake_up_process(), set_current_state(), schedule()
  */
 int processor_container_switch(struct processor_container_cmd __user *user_cmd)
-{
+{	
 	printk("Switching between container\n");
     return 0;
 }
