@@ -1,4 +1,4 @@
-# CSC 501 Project 1: Process Container
+# Operating System Project 1: Process Container
 
 ## Overview
 Modern operating systems promote virtualization of their underlying machines and isolation using process/thread abstractions. As a result, threads/processes also become the identities of resource scheduling for tasks in the system. However, the "matching" between abstraction and resource allocation also creates "mismatching" between tasks and their real demands of resources. For example, process scheduling is based on the CPU time, regardless their I/O usages. The system also lacks flexibilities in controlling the usage of system resources for threads/processes with different properties as they are all treated the same.
@@ -11,8 +11,6 @@ With this new facilities, threads assigned to the same resource container will/c
 
 In this project, you will be given the prototype of the kernel module with a core.c file in its source directory that only contains empty functions. We also provide a user-space library that allows an application to interact with this kernel module through ioctl interfaces as well as a sample benchmark application that you may extend to test if your kernel module functions correctly.
 
-You are strongly encouraged to work in a group of 2. Groups do the same project as individuals. Both members will receive the same grade. Note that working in groups may or may not make the project easier, depending on how the group interactions work out. If collaboration issues arise, contact your instructor as soon as possible: flexibility in dealing with such issues decreases as the deadline approaches.
-
 ## Objective
 * Learning UNIX/Linux kernel programming as well as the constraints
 * Learning UNIX/Linux system process scheduling
@@ -22,7 +20,7 @@ You are strongly encouraged to work in a group of 2. Groups do the same project 
 
 ## Step
 ### Reserve a VCL machine or Install Virtual Machine
-To begin, you need to first form a group and setup the environment for developing your project. You should set up a machine or a VMWare virtual machine (CS students should have free license for that https://www.csc.ncsu.edu/vmap/) with clean Ubuntu 16.04 installation. You also may use the VCL service maintained by NCSU through https://vcl.ncsu.edu/ . You may reserve one virtual machine and connect to this machine remotely by selecting reservations. We will use the "Ubuntu 16.04 Base" to test your kernel module. However, the VCL service will reset once your reservation timeout. 
+To begin, you should set up a machine or a VMWare virtual machine with clean Ubuntu 16.04 installation.Please use the "Ubuntu 16.04 Base" to test your kernel module. 
 
 ### Kernel Compilation
 ```shell
@@ -54,6 +52,11 @@ cd ..
 # example
 ./test.sh 1 2
 ./test.sh 2 2 4
+```
+
+### If program hang up or crash
+```shell
+sudo rmmod processor_container
 ```
 ## Tasks
 1. Implementing the process_container kernel module: it needs the following features:
